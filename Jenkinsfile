@@ -76,7 +76,7 @@ pipeline {
                 steps { 
                     script{ 
                         dir("Automations"){ 
-                            sh "bash updatebackendnew.sh" 
+                            sh "bash backendbash.sh" 
                         } 
                     } 
                 } 
@@ -85,7 +85,7 @@ pipeline {
                 steps { 
                     script{ 
                         dir("Automations"){ 
-                            sh "bash updatefrontendnew.sh" 
+                            sh "bash frontendbash.sh" 
                         } 
                     } 
                 } 
