@@ -1,0 +1,172 @@
+- name: Install and configure Jenkins, Docker, Docker-compose, AWS CLI, kubectl, SonarQube, ArgoCD, Trivy, Prometheus and Grafana On server
+  hosts: master
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt: 
+        update_cache: yes
+
+    - name: Install Java 17
+      apt:
+        name: openjdk-17-jdk-headless
+        state: present
+
+    - name: Download Jenkins Repository key
+      get_url: 
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins Repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        filename: jenkins
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Enable and start Jenkins
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Ensure Docker socket is accessible
+      file:
+        path: /var/run/docker.sock
+        mode: '0777'
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose 
+        state: present
+
+    - name: Install zip and unzip
+      apt:
+        name:
+          - zip
+          - unzip
+        state: present
+
+    - name: Download AWS CLI Installer
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+
+    - name: Unzip AWS CLI Installer
+      unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: yes
+
+    - name: Install AWS CLI
+      command: /tmp/aws/install
+
+    - name: Note AWS configure
+      debug:
+        msg: "Run 'aws configure' manually to set up AWS credentials."
+
+    - name: Download kubectl
+      get_url:
+        url: https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Verify kubectl installation
+      command: kubectl version --short --client
+      register: kubectl_version
+      changed_when: false
+
+    - name: Display kubectl version
+      debug:
+        var: kubectl_version.stdout
+
+    - name: Install SonarQube using Docker 
+      docker_container:
+        name: sonarqube
+        image: sonarqube:lts-community
+        ports:
+          - "9000:9000"
+        state: started
+        restart_policy: always
+
+    - name: Download ArgoCD CLI
+      get_url: 
+        url: https://github.com/argoproj/argo-cd/releases/download/v2.4.7/argocd-linux-amd64
+        dest: /usr/local/bin/argocd
+        mode: '0755'
+
+    - name: Install dependencies for Trivy
+      apt:
+        name:
+          - wget
+          - apt-transport-https
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Add Trivy GPG key
+      apt_key:
+        url: https://aquasecurity.github.io/trivy-repo/deb/public.key
+        state: present
+
+    - name: Add Trivy repository
+      apt_repository:
+        repo: "deb https://aquasecurity.github.io/trivy-repo/deb {{ ansible_distribution_release }} main"
+        state: present
+
+    - name: Install Trivy
+      apt:
+        name: trivy
+        state: present
+        update_cache: yes
+
+    - name: Create Prometheus config directory
+      file:
+        path: /opt/prometheus
+        state: directory
+        mode: '0755'
+
+    - name: Create Prometheus config file
+      copy:
+        dest: /opt/prometheus/prometheus.yml
+        content: |
+          global:
+            scrape_interval: 15s
+          scrape_configs:
+            - job_name: 'prometheus'
+              static_configs:
+                - targets: ['localhost:9090']
+
+    - name: Start Prometheus container
+      docker_container:
+        name: prometheus
+        image: prom/prometheus:latest
+        ports:
+          - "9090:9090"
+        volumes:
+          - /opt/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        state: started
+        restart_policy: always
+
+    - name: Start Grafana container
+      docker_container:
+        name: grafana
+        image: grafana/grafana-oss:latest
+        ports:
+          - "3000:3000"
+        state: started
+        restart_policy: always
+
+    - name: Print completed message
+      debug:
+        msg: "All DevOps tools are installed on Your Server"
+
