@@ -1,4 +1,4 @@
-#MERN Stack Application on EKS with CI/CD Automation
+# MERN Stack Application on EKS with CI/CD Automation
 
 ## CI/CD Pipeline with Jenkins, Docker, Kubernetes, and Monitoring
  CI-CD-architecture:
