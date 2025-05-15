@@ -1,4 +1,6 @@
-# CI/CD Pipeline with Jenkins, Docker, Kubernetes, and Monitoring
+#MERN Stack Application on EKS with CI/CD Automation
+
+## CI/CD Pipeline with Jenkins, Docker, Kubernetes, and Monitoring
  CI-CD-architecture:
 
 ![CI-CD-architecture](https://github.com/user-attachments/assets/0799e41c-6f8b-4f80-8eaa-0f2036f630cb)
